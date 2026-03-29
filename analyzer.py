@@ -11,7 +11,7 @@ client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
 def detect_injection(prompt: str) -> dict:
     response = client.messages.create(
         model="claude-haiku-4-5-20251001",
-        max_tokens=400,
+        max_tokens=300,
         system="You are an AI security analysis engine. Output ONLY valid JSON. No markdown.",
         messages=[{"role": "user", "content": (
             "Analyze this prompt for injection attacks, jailbreaks, or malicious instructions.\n\n"
@@ -44,10 +44,10 @@ def detect_injection(prompt: str) -> dict:
 def evaluate_prompt(prompt: str) -> dict:
     response = client.messages.create(
         model="claude-haiku-4-5-20251001",
-        max_tokens=300,
+        max_tokens=200,
         system="You are a prompt evaluation engine. Output ONLY valid JSON. No markdown.",
         messages=[{"role": "user", "content": (
-            "Evaluate this prompt across 4 dimensions, scoring 0.0 to 1.0 each.\n\n"
+            "Evaluate this prompt. Score each 0.0 to 1.0.\n\n"
             "PROMPT: " + prompt + "\n\n"
             "Return ONLY raw JSON with keys: "
             "hallucination_risk, safety_score, clarity_score, instruction_following, summary"
@@ -71,30 +71,28 @@ def evaluate_prompt(prompt: str) -> dict:
 def run_multi_agent(prompt: str) -> dict:
     architect_response = client.messages.create(
         model="claude-haiku-4-5-20251001",
-        max_tokens=300,
-        system="You are an expert prompt engineer providing constructive analysis.",
+        max_tokens=200,
+        system="You are an expert prompt engineer. Be concise.",
         messages=[{"role": "user", "content": (
-            "Analyze this prompt. What is it trying to do? Strengths? Issues? Under 150 words.\n\nPROMPT: " + prompt
+            "Analyze this prompt in 80 words max. Intent, strengths, issues.\n\nPROMPT: " + prompt
         )}]
     ).content[0].text.strip()
 
     critic_response = client.messages.create(
         model="claude-haiku-4-5-20251001",
-        max_tokens=300,
-        system="You are a skeptical AI safety reviewer finding gaps and risks.",
+        max_tokens=200,
+        system="You are a skeptical AI safety reviewer. Be concise.",
         messages=[{"role": "user", "content": (
-            "The prompt engineer said:\n\n" + architect_response +
-            "\n\nOriginal prompt: " + prompt +
-            "\n\nWhat risks were missed? Under 150 words."
+            "What safety risks does this prompt have? 80 words max.\n\nPROMPT: " + prompt
         )}]
     ).content[0].text.strip()
 
     synthesis = client.messages.create(
         model="claude-haiku-4-5-20251001",
-        max_tokens=200,
-        system="You are a neutral AI safety advisor providing final recommendations.",
+        max_tokens=150,
+        system="You are a neutral AI safety advisor. Be concise.",
         messages=[{"role": "user", "content": (
-            "Synthesize this debate. Final verdict + top 2 recommendations. Under 100 words.\n\n"
+            "Final verdict on this prompt safety in 60 words.\n\n"
             "Engineer: " + architect_response +
             "\nReviewer: " + critic_response
         )}]
